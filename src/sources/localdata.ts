@@ -9,8 +9,11 @@ import { SearchResult, SpellData, ZoneData, fuzzyMatch, normalizeQuery } from '.
 
 // ============ CONFIGURATION ============
 
-const DEFAULT_EQ_PATH = '/Users/arthur/Library/Application Support/CrossOver/Bottles/EverQuest/drive_c/users/Public/Daybreak Game Company/Installed Games/EverQuest';
+const DEFAULT_EQ_PATH = '';
 const EQ_GAME_PATH = process.env.EQ_GAME_PATH || DEFAULT_EQ_PATH;
+if (!EQ_GAME_PATH) {
+  console.error('[LocalData] EQ_GAME_PATH not set. Set the EQ_GAME_PATH environment variable to your EverQuest installation directory to enable local data tools.');
+}
 
 // ============ CLASS MAPPING ============
 
@@ -2437,6 +2440,7 @@ const EQSTR_CLASS_DESC: Record<number, number> = {
   10: 3329,  // Shaman
   1: 3330,   // Warrior
   12: 3331,  // Wizard
+  16: 3332,  // Berserker
 };
 
 // eqstr_us.txt IDs for stat descriptions
@@ -24313,7 +24317,10 @@ async function loadSnapshot(): Promise<DataSnapshot | null> {
   try {
     const data = await readFile(snapshotPath(), 'utf-8');
     return JSON.parse(data) as DataSnapshot;
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.error('[LocalData] Snapshot file could not be parsed:', (error as Error).message);
+    }
     return null;
   }
 }

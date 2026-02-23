@@ -67,6 +67,7 @@ export class AllakhazamSource extends EQDataSource {
       const html = await fetchPage(url);
 
       let match;
+      pattern.lastIndex = 0;
       while ((match = pattern.exec(html)) !== null) {
         const id = match[1];
         if (seenIds.has(id)) continue;

@@ -253,13 +253,11 @@ async function waitForRateLimit(url: string): Promise<void> {
   }
 
   // Wait if no tokens available
-  if (state.tokens <= 0) {
+  if (state.tokens < 1) {
     const waitTime = RATE_LIMIT_REFILL_MS - (now - state.lastRefill);
-    if (waitTime > 0) {
-      await sleep(waitTime);
-      state.tokens = RATE_LIMIT_TOKENS;
-      state.lastRefill = Date.now();
-    }
+    await sleep(Math.max(0, waitTime));
+    state.tokens = RATE_LIMIT_TOKENS;
+    state.lastRefill = Date.now();
   }
 
   state.tokens--;
@@ -308,7 +306,7 @@ export function normalizeQuery(query: string): string {
     .replace(/\bpom\b/gi, 'plane of mischief')
     .replace(/\bpoj\b/gi, 'plane of justice')
     .replace(/\bpov\b/gi, 'plane of valor')
-    .replace(/\bpoi\b/gi, 'plane of innovation')
+    .replace(/\bpoinno\b/gi, 'plane of innovation')
     .replace(/\bpon\b/gi, 'plane of nightmare')
     .replace(/\bpod\b/gi, 'plane of disease')
     .replace(/\bsol\s?a\b/gi, "solusek's eye")
