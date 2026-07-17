@@ -1,0 +1,27 @@
+# Weekly dependency updates, Tuesday evenings ET. Patch and minor npm updates
+# are grouped into a single PR and auto-merged by
+# .github/workflows/dependabot-auto-merge.yml once CI passes; majors get their
+# own PR and wait for human review.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "20:00"
+      timezone: America/New_York
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "20:00"
+      timezone: America/New_York

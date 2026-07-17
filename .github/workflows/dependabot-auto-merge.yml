@@ -1,0 +1,51 @@
+name: Dependabot auto-merge
+
+# Merges Dependabot patch/minor PRs once CI succeeds, so the weekly Tuesday
+# updates land without manual review. Major bumps are left open for a human.
+#
+# This repo has no branch protection, so GitHub's native auto-merge
+# (gh pr merge --auto) would merge before CI runs; instead this job polls the
+# CI workflow run for the PR's head SHA and merges only on success.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for CI, then merge
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # ~30 min ceiling; CI normally finishes in a few minutes.
+          for i in $(seq 1 60); do
+            conclusion=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SHA" \
+              --jq '[.workflow_runs[] | select(.name == "CI")][0].conclusion // "pending"')
+            case "$conclusion" in
+              success)
+                gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+                exit 0
+                ;;
+              failure|cancelled|timed_out|action_required)
+                echo "CI concluded '$conclusion' — leaving PR open for review." >&2
+                exit 1
+                ;;
+            esac
+            sleep 30
+          done
+          echo "Timed out waiting for CI." >&2
+          exit 1
