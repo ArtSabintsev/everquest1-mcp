@@ -11,13 +11,15 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc && node dist/index.js",
     "test": "tsc && node dist/tests/tools.test.js",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [

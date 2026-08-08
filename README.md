@@ -2,6 +2,8 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that provides AI assistants with comprehensive access to EverQuest game data. Search across 12 online databases, lore/archive sources, and a local game data installation with **412 tools** covering spells, items, NPCs, zones, quests, factions, achievements, overseer, mercenaries, lore, archives, and more.
 
+**Status:** stable `1.x`. Releases are cut automatically from conventional commits on `main` (annotated `v*` tags + GitHub Releases). See [VERSIONING.md](./VERSIONING.md). Planned work: [BACKLOG.md](./BACKLOG.md).
+
 ## Features
 
 - **412 tools** for querying EverQuest data

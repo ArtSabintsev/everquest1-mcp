@@ -1,0 +1,131 @@
+name: Release
+
+# Automatic semver releases: every substantive change to main is versioned.
+# scripts/prepare-release.mjs picks the bump from conventional commits since
+# the last tag (breaking -> major, feat -> minor, otherwise patch), converts
+# the CHANGELOG's [Unreleased] section (or a generated commit summary) into
+# the new version's notes, and the workflow commits, tags, and publishes a
+# GitHub Release.
+#
+# Loop safety: pushes made here use GITHUB_TOKEN, which never retriggers push
+# workflows, and the script ignores chore(release) commits.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # Needs only git + npm itself, so it runs before the (much slower)
+      # dependency install and lets no-op runs exit cheaply.
+      - name: Prepare release
+        id: prep
+        run: |
+          version=$(node scripts/prepare-release.mjs)
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: steps.prep.outputs.version != 'none'
+        run: npm ci
+
+      - name: Validate
+        if: steps.prep.outputs.version != 'none'
+        run: npm test
+
+      # Racing merges are routine — a burst of Dependabot merges lands commits
+      # on main while this run is mid-flight — so a rejected push is retried
+      # rather than reported as a failure. Each retry starts over from the new
+      # main: the version and the notes are both derived from the commit range,
+      # so neither survives a resync.
+      - name: Commit, tag, and push
+        id: push
+        if: steps.prep.outputs.version != 'none'
+        env:
+          MAX_ATTEMPTS: "3"
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          max_attempts="${MAX_ATTEMPTS:-3}"
+          version="${{ steps.prep.outputs.version }}"
+          attempt=1
+          while :; do
+            git add package.json package-lock.json CHANGELOG.md
+            git commit -m "chore(release): ${version}"
+            # Annotated tag pushed explicitly: --follow-tags ignores lightweight
+            # tags, which would let GitHub mint the tag at a racing HEAD instead.
+            git tag -a "v${version}" -m "v${version}"
+            # --atomic: main and the tag land together or not at all.
+            if git push --atomic origin main "refs/tags/v${version}"; then
+              echo "version=${version}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "::error::release push rejected after ${attempt} attempts"
+              exit 1
+            fi
+            attempt=$((attempt + 1))
+
+            echo "push rejected; resyncing with main (attempt ${attempt}/${max_attempts})"
+            git tag -d "v${version}"
+            git fetch --tags --force origin main
+            git reset --hard origin/main
+            rm -f .release-notes.md
+
+            version=$(node scripts/prepare-release.mjs)
+            if [ "${version}" = "none" ]; then
+              echo "nothing left to release after resync"
+              echo "version=none" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            npm ci
+            npm test
+          done
+
+      # Runs even when there is nothing new to release, so a previous run that
+      # pushed a tag but failed at this step self-heals on the next trigger.
+      - name: Ensure GitHub Release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.push.outputs.version || steps.prep.outputs.version }}
+        run: |
+          version="${RELEASE_VERSION}"
+          if [ "$version" != "none" ]; then
+            tag="v${version}"
+          else
+            tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          fi
+          if [ -z "$tag" ]; then
+            echo "no tag to release"; exit 0
+          fi
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "release $tag already exists"; exit 0
+          fi
+          if [ ! -s .release-notes.md ]; then
+            node scripts/changelog-notes.mjs "${tag#v}" > .release-notes.md
+          fi
+          gh release create "$tag" --title "$tag" --notes-file .release-notes.md

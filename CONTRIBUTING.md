@@ -78,7 +78,12 @@ Tests are in `src/tests/`. Add tests for:
 2. Create a feature branch
 3. Make your changes
 4. Run tests: `npm test`
-5. Submit a PR
+5. Use a [conventional commit](https://www.conventionalcommits.org/) subject (`feat:`, `fix:`, `chore:`, `docs:`, …) — releases are automated from those subjects on `main`
+6. Submit a PR
+
+## Versioning
+
+Releases are automated from conventional commits on `main`. See **[VERSIONING.md](./VERSIONING.md)** for bump rules, tags, CHANGELOG dates, and what not to hand-edit. Product/follow-up work lives in **[BACKLOG.md](./BACKLOG.md)**.
 
 ## Reporting Issues
 
