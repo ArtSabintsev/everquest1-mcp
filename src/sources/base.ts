@@ -214,6 +214,48 @@ export function getCacheStats(): { size: number; maxSize: number; ttlMinutes: nu
   return { size: cache.size, maxSize: MAX_CACHE_SIZE, ttlMinutes: CACHE_TTL_MS / 60000 };
 }
 
+// Per-host last successful fetch (epoch ms). Used by list_sources / provenance.
+const lastSuccessByHost = new Map<string, number>();
+const lastErrorByHost = new Map<string, { at: number; message: string }>();
+
+export function recordSourceSuccess(url: string): void {
+  try {
+    lastSuccessByHost.set(new URL(url).hostname, Date.now());
+    lastErrorByHost.delete(new URL(url).hostname);
+  } catch {
+    // ignore invalid URLs
+  }
+}
+
+export function recordSourceFailure(url: string, message: string): void {
+  try {
+    lastErrorByHost.set(new URL(url).hostname, { at: Date.now(), message });
+  } catch {
+    // ignore
+  }
+}
+
+export function getSourceHostHealth(): Array<{
+  host: string;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  lastError: string | null;
+}> {
+  const hosts = new Set([...lastSuccessByHost.keys(), ...lastErrorByHost.keys()]);
+  return [...hosts]
+    .sort((a, b) => a.localeCompare(b))
+    .map((host) => {
+      const ok = lastSuccessByHost.get(host);
+      const err = lastErrorByHost.get(host);
+      return {
+        host,
+        lastSuccessAt: ok ? new Date(ok).toISOString() : null,
+        lastErrorAt: err ? new Date(err.at).toISOString() : null,
+        lastError: err?.message ?? null
+      };
+    });
+}
+
 // ============ RATE LIMITING ============
 
 interface RateLimitState {
@@ -477,6 +519,7 @@ export async function fetchPage(url: string, skipCache = false): Promise<string>
 
       const text = await followMetaRefresh(url, await response.text(), response);
       setCache(url, text);
+      recordSourceSuccess(url);
       return text;
     } catch (error) {
       clearTimeout(timeoutId);
@@ -487,10 +530,12 @@ export async function fetchPage(url: string, skipCache = false): Promise<string>
         await sleep(RETRY_DELAY_MS * (attempt + 1));
         continue;
       }
+      recordSourceFailure(url, lastError.message);
       throw lastError;
     }
   }
 
+  recordSourceFailure(url, lastError?.message ?? "Fetch failed");
   throw lastError ?? new Error('Fetch failed');
 }
 

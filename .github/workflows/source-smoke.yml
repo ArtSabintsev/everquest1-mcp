@@ -1,0 +1,38 @@
+name: Source Smoke
+
+# Live probes against every public online data host this server reads.
+# Failures are reported per-source. The job fails only when *every* online
+# probe fails (total outage). A single flaky host does not red the run.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Tue/Fri ~10:17 UTC
+    - cron: "17 10 * * 2,5"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Source smoke
+        run: npm run smoke:sources
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-smoke-report
+          path: source-smoke-report.json
+          if-no-files-found: ignore

@@ -6,6 +6,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Keepalive workflow so scheduled jobs survive quiet stretches on `main` (#5).
+- Scheduled Source Smoke workflow + `npm run smoke:sources` probing every public online host (#6).
+- `eq1_sources` / enhanced `list_sources` provenance (local vs online authority, last-success health) and `list_tool_groups`; tool descriptions prefixed with `[group]` without renaming IDs (#7).
+
+### Changed
+
+- Changelog and docs no longer cross-reference other game MCP packages.
+
 ## [1.1.1] - 2026-08-08
 
 ### Changed
@@ -16,7 +26,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Automatic semver Release workflow (`scripts/prepare-release.mjs`, annotated `v*` tags, GitHub Releases) aligned with the EQL / Guild Wars MCP repos.
+- Automatic semver Release workflow (`scripts/prepare-release.mjs`, annotated `v*` tags, GitHub Releases) on every substantive push to `main`.
 - `VERSIONING.md` and `BACKLOG.md`.
 
 ## [1.0.0] - 2026-08-08

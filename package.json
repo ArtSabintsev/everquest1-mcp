@@ -20,6 +20,7 @@
     "dev": "tsc && node dist/index.js",
     "test": "tsc && node dist/tests/tools.test.js",
     "typecheck": "tsc --noEmit",
+    "smoke:sources": "node scripts/source-smoke.mjs",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -7,10 +8,14 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { tools, handleToolCall } from './tools.js';
 
+const packageVersion = (
+  JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+).version;
+
 const server = new Server(
   {
-    name: 'eq-mcp',
-    version: '1.0.0',
+    name: 'everquest1-mcp',
+    version: packageVersion,
   },
   {
     capabilities: {

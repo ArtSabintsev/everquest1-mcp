@@ -26,6 +26,7 @@ import {
   getEqArchiveDocument,
   formatEqArchiveSearch,
   getCacheStats,
+  getSourceHostHealth,
   clearCache,
   // Local game data functions
   isGameDataAvailable,
@@ -423,7 +424,7 @@ import {
   getClassObsoleteSpellAnalysis,
 } from './sources/index.js';
 
-export const tools = [
+const toolsUnannotated = [
   // === MULTI-SOURCE SEARCH ===
   {
     name: 'search_all',
@@ -5226,14 +5227,86 @@ export const tools = [
   },
   {
     name: 'list_sources',
-    description: 'List all available EverQuest data sources and their specialties.',
+    description:
+      'List EverQuest data sources with authority (local-game vs online), specialties, URLs, and last successful fetch health when known. Alias of eq1_sources.',
     inputSchema: {
       type: 'object',
       properties: {},
       required: []
     }
   },
+  {
+    name: 'eq1_sources',
+    description:
+      'Provenance catalog: local game-data vs online hosts, specialties, availability, and last-success timestamps for this process. Same payload as list_sources.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: 'list_tool_groups',
+    description:
+      'List tool groups (multi-source, allakhazam, online-source, lore-archive, local-game-data, meta) with tool names. Tool IDs are unchanged; descriptions are prefixed with [group].',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        group: {
+          type: 'string',
+          description: 'Optional group filter (e.g. local-game-data, multi-source). Omit to list all groups.'
+        }
+      },
+      required: []
+    }
+  },
 ];
+
+/** Assign a stable agent-facing group without renaming tool IDs. */
+export function toolGroupFor(name: string): string {
+  if (name === 'list_sources' || name === 'eq1_sources' || name === 'list_tool_groups' || name === 'get_local_data_status') {
+    return 'meta';
+  }
+  if (name === 'search_all' || name === 'search_quests' || name === 'search_tradeskills') {
+    return 'multi-source';
+  }
+  if (
+    name === 'search_eq' ||
+    name === 'get_spell' ||
+    name === 'get_item' ||
+    name === 'get_npc' ||
+    name === 'get_zone' ||
+    name === 'get_quest'
+  ) {
+    return 'allakhazam';
+  }
+  if (
+    name.startsWith('search_almars') ||
+    name.startsWith('search_eqresource') ||
+    name.startsWith('search_fanra') ||
+    name.startsWith('search_eqtraders') ||
+    name.startsWith('search_lucy') ||
+    name.startsWith('search_raidloot') ||
+    name === 'search_ui'
+  ) {
+    return 'online-source';
+  }
+  if (
+    name.includes('fvproject') ||
+    name.includes('eqarchives') ||
+    name.includes('eqarchive') ||
+    name.includes('official_history') ||
+    name.includes('history_of_norrath')
+  ) {
+    return 'lore-archive';
+  }
+  return 'local-game-data';
+}
+
+export const tools = toolsUnannotated.map((tool) => ({
+  ...tool,
+  description: `[${toolGroupFor(tool.name)}] ${tool.description}`
+}));
 
 // === FORMATTERS ===
 
@@ -5596,39 +5669,122 @@ function formatQuest(quest: QuestData): string {
   return lines.join('\n');
 }
 
-function formatSources(): string {
-  const lines = ['# Available EverQuest Data Sources', ''];
+function hostOf(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
 
-  const sourceInfo = [
-    { name: 'Local Game Data', specialty: 'Authoritative offline data from EQ game files: spells (70K+ with 500+ effect types & categories), zones, skill caps, class stats, achievements, factions (1600+), AA abilities (2700+), combat abilities (950), mercenaries (4200+ with stances & abilities), AC mitigation, spell stacking, map POIs (34K+), lore (50 stories), game strings (7K), Overseer agents (300+ with archetypes, jobs & traits) & quests (800+ with slots, incapacitations & outcomes), race/class info (16/16 with starting city lore & Drakkin heritages), deities (17 with lore), stats, tributes (266), alt currencies (54), item effects (1100+), creature/NPC race types (980+), banner/campsite categories, expansion list (33), game events/bulletins (550+)', url: isGameDataAvailable() ? 'Available' : 'Not found (set EQ_GAME_PATH env var)' },
-    { name: 'Allakhazam', specialty: 'Primary database - spells, items, NPCs, zones, quests', url: 'https://everquest.allakhazam.com' },
-    { name: "Almar's Guides", specialty: 'Quest walkthroughs, epic guides, leveling guides', url: 'https://www.almarsguides.com/eq' },
-    { name: 'EQResource', specialty: 'Modern expansion content, progression, spells database', url: 'https://eqresource.com' },
-    { name: "Fanra's Wiki", specialty: 'General game information and mechanics', url: 'https://everquest.fanra.info' },
-    { name: 'EQ Traders', specialty: 'Tradeskill recipes and guides', url: 'https://www.eqtraders.com' },
-    { name: "Zliz's Compendium", specialty: 'Comprehensive EQ database and tools', url: 'https://www.zlizeq.com' },
-    { name: 'Lucy', specialty: 'Classic EQ spell and item data (historical)', url: 'https://lucy.allakhazam.com' },
-    { name: 'RaidLoot', specialty: 'Raid loot tables by expansion', url: 'https://raidloot.com/EQ' },
-    { name: 'EQInterface', specialty: 'UI mods, maps, parsers, and tools', url: 'https://www.eqinterface.com' },
-    { name: 'Official Sony EQ History (Wayback)', specialty: 'Original official 1999 History of Norrath lore page, including Norrath ages and Miragul/Erudite necromancy lore', url: 'https://web.archive.org/web/19990910004532/http://everquest.station.sony.com/e_history.html' },
-    { name: 'The Firiona Vie Project Lore', specialty: 'Community MediaWiki Category:Lore pages preserving classic EverQuest lore articles', url: 'https://fvproject.com/index.php/Category:Lore' },
-    { name: 'EQArchives', specialty: 'Searchable historical archive of preserved EverQuest websites, mailing lists, patch records, logs, screenshots, and related corpus material', url: 'https://search.eqarchives.org/' },
+function formatSources(): string {
+  const lines = ['# EverQuest data sources (provenance)', ''];
+  lines.push('Authority **local-game** is offline client files via `EQ_GAME_PATH`. Authority **online** is public HTTP. Prefer local-game for spells/stats when available; use online for guides, raid loot, and community pages.');
+  lines.push('');
+
+  const health = new Map(getSourceHostHealth().map((h) => [h.host, h]));
+
+  const sourceInfo: Array<{
+    name: string;
+    authority: 'local-game' | 'online';
+    specialty: string;
+    url: string;
+  }> = [
+    {
+      name: 'Local Game Data',
+      authority: 'local-game',
+      specialty:
+        'Authoritative offline data from EQ game files: spells, zones, skill caps, achievements, factions, AA, mercenaries, Overseer, maps, lore strings, and more',
+      url: isGameDataAvailable() ? `Available (${process.env.EQ_GAME_PATH || 'default path'})` : 'Not found (set EQ_GAME_PATH)'
+    },
+    { name: 'Allakhazam', authority: 'online', specialty: 'Primary database — spells, items, NPCs, zones, quests', url: 'https://everquest.allakhazam.com' },
+    { name: "Almar's Guides", authority: 'online', specialty: 'Quest walkthroughs, epic guides, leveling guides', url: 'https://www.almarsguides.com/eq' },
+    { name: 'EQ Traders', authority: 'online', specialty: 'Tradeskill recipes and guides', url: 'https://www.eqtraders.com' },
+    { name: 'EQArchives', authority: 'online', specialty: 'Historical websites, mailing lists, patch records, logs', url: 'https://search.eqarchives.org/' },
+    { name: 'EQInterface', authority: 'online', specialty: 'UI mods, maps, parsers, and tools', url: 'https://www.eqinterface.com' },
+    { name: 'EQResource', authority: 'online', specialty: 'Modern expansion content, progression, spells', url: 'https://eqresource.com' },
+    { name: "Fanra's Wiki", authority: 'online', specialty: 'General game information and mechanics', url: 'https://everquest.fanra.info' },
+    { name: 'Lucy', authority: 'online', specialty: 'Classic EQ spell and item data (historical)', url: 'https://lucy.allakhazam.com' },
+    {
+      name: 'Official Sony EQ History (Wayback)',
+      authority: 'online',
+      specialty: 'Original official 1999 History of Norrath lore page',
+      url: 'https://web.archive.org/web/19990910004532/http://everquest.station.sony.com/e_history.html'
+    },
+    { name: 'RaidLoot', authority: 'online', specialty: 'Raid loot tables by expansion', url: 'https://raidloot.com/EQ' },
+    {
+      name: 'The Firiona Vie Project Lore',
+      authority: 'online',
+      specialty: 'MediaWiki Category:Lore classic EverQuest lore articles',
+      url: 'https://fvproject.com/index.php/Category:Lore'
+    },
+    { name: "Zliz's Compendium", authority: 'online', specialty: 'Comprehensive EQ encyclopedia', url: 'https://www.zlizeq.com' }
   ];
 
   for (const src of sourceInfo) {
     lines.push(`## ${src.name}`);
+    lines.push(`**Authority:** ${src.authority}`);
     lines.push(`**Specialty:** ${src.specialty}`);
-    lines.push(`**URL:** ${src.url}`);
+    lines.push(`**URL / status:** ${src.url}`);
+    if (src.authority === 'online') {
+      const host = hostOf(src.url);
+      const h = host ? health.get(host) : undefined;
+      if (h?.lastSuccessAt) {
+        lines.push(`**Last successful fetch (this process):** ${h.lastSuccessAt}`);
+      } else {
+        lines.push('**Last successful fetch (this process):** none yet');
+      }
+      if (h?.lastError) {
+        lines.push(`**Last error (this process):** ${h.lastErrorAt} — ${h.lastError}`);
+      }
+    } else {
+      lines.push(`**Available:** ${isGameDataAvailable() ? 'yes' : 'no'}`);
+    }
     lines.push('');
   }
 
-  // Cache stats
   const stats = getCacheStats();
   lines.push('---');
-  lines.push(`*Cache: ${stats.size}/${stats.maxSize} entries, ${stats.ttlMinutes} min TTL*`);
+  lines.push('## Tool groups');
+  lines.push('Use `list_tool_groups` for full tool names. Descriptions are prefixed with `[group]`.');
+  const groups = new Map<string, number>();
+  for (const tool of tools) {
+    const g = toolGroupFor(tool.name);
+    groups.set(g, (groups.get(g) ?? 0) + 1);
+  }
+  for (const [g, n] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    lines.push(`- **${g}:** ${n} tool(s)`);
+  }
   lines.push('');
-  lines.push('Use `search_all` to search all sources at once, or use source-specific tools for targeted searches.');
+  lines.push(`*HTTP cache: ${stats.size}/${stats.maxSize} entries, ${stats.ttlMinutes} min TTL*`);
+  lines.push('');
+  lines.push('Use `search_all` for multi-source search, source-specific tools for one host, or local-game-data tools when `EQ_GAME_PATH` is set.');
 
+  return lines.join('\n');
+}
+
+function formatToolGroups(groupFilter?: string): string {
+  const filter = groupFilter?.trim().toLowerCase();
+  const byGroup = new Map<string, string[]>();
+  for (const tool of tools) {
+    const g = toolGroupFor(tool.name);
+    if (filter && g !== filter && !g.includes(filter)) continue;
+    if (!byGroup.has(g)) byGroup.set(g, []);
+    byGroup.get(g)!.push(tool.name);
+  }
+  if (byGroup.size === 0) {
+    return `No tool groups matched "${groupFilter}". Known groups: allakhazam, lore-archive, local-game-data, meta, multi-source, online-source.`;
+  }
+  const lines = ['# Tool groups', ''];
+  lines.push('Tool IDs are stable. Each tool description is prefixed with `[group]` for agent navigation.');
+  lines.push('');
+  for (const [g, names] of [...byGroup.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    lines.push(`## ${g} (${names.length})`);
+    for (const name of names.sort((a, b) => a.localeCompare(b))) {
+      lines.push(`- \`${name}\``);
+    }
+    lines.push('');
+  }
   return lines.join('\n');
 }
 
@@ -8157,8 +8313,14 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
         return getLocalDataStatus();
       }
 
-      case 'list_sources': {
+      case 'list_sources':
+      case 'eq1_sources': {
         return formatSources();
+      }
+
+      case 'list_tool_groups': {
+        const group = typeof args.group === 'string' ? args.group : undefined;
+        return formatToolGroups(group);
       }
 
       default:

@@ -2,22 +2,22 @@
 
 Prioritized follow-ups for **everquest1-mcp**. Not a commitment schedule — pick from the top of a section when you have a spare cycle.
 
-## P0 — platform parity (keep the lights on)
+## P0 — keep the lights on
 
 - [x] Semver tags + GitHub Releases on every substantive `main` push (`VERSIONING.md`, Release workflow).
-- [ ] **Keepalive workflow** (empty commit when main is quiet >45 days) so scheduled jobs cannot be disabled by GitHub’s 60-day inactivity rule — same pattern as `guildwars-reforged-mcp`.
+- [x] **Keepalive workflow** (empty commit when main is quiet >45 days) so scheduled jobs are not disabled by GitHub’s 60-day inactivity rule (#5).
 - [ ] **Conventional-commit hygiene on Dependabot**: ensure squash/merge subjects stay conventional so auto-releases stay meaningful (`chore(deps): …`).
 - [ ] Pin release validation to Node 22 only (match Release runner); keep CI matrix on 20/22/24.
 
-## P1 — continuous health / “always on”
+## P1 — continuous health
 
-- [ ] **Source smoke workflow** (scheduled): hit each online DB homepage or a cheap search with a bounded timeout; report per-source up/down without failing the whole suite on one flaky host (mirror GW `source-smoke.yml`).
-- [ ] **Structured smoke report artifact** + optional Slack/GitHub issue when a source is red for N consecutive runs.
+- [x] **Source smoke workflow** (scheduled): probe each public online host with a bounded timeout; report per-source status; fail only if every host is down (#6).
+- [ ] **Structured smoke alert** (optional GitHub issue) when a source is red for N consecutive runs.
 - [ ] Document expected rate limits / User-Agent policy per source in `docs/` (Allakhazam, Lucy, Fanra, etc.).
 
 ## P2 — data coverage
 
-- [ ] Audit online sources vs README table: drop dead hosts, add any post-2025 EQ1 community DBs that are public and scrape-friendly.
+- [ ] Audit online sources vs README table: drop dead hosts, add any new public EQ1 community DBs that are scrape-friendly.
 - [ ] **EQ Resource / modern expansion** depth: progression flags, current-tier raid notes if still HTML-stable.
 - [ ] **Tradeskill** coverage pass (EQ Traders recipes) — search quality + tool descriptions.
 - [ ] Optional: lightweight **snapshot/diff job** for local-game parsers when `EQ_GAME_PATH` is available on a self-hosted runner (not required for public CI).
@@ -25,22 +25,21 @@ Prioritized follow-ups for **everquest1-mcp**. Not a commitment schedule — pic
 
 ## P3 — agent experience
 
-- [ ] Collapse or namespace the 412-tool surface into clearer groups in the tool list (spells / items / zones / online / lore) without breaking tool names.
-- [ ] Add `eq1_sources` / provenance-style tools for “what am I querying?” (local vs online, last successful fetch).
-- [ ] Era/advisory notes when results mix classic vs current Live expansion content (similar spirit to EQL era advisories).
-- [ ] README install recipes for Codex / Claude Code / Grok that match the other MCP repos (`npx github:…` if published that way).
+- [x] Tool groups via `[group]` description prefixes + `list_tool_groups` (IDs unchanged) (#7).
+- [x] `eq1_sources` / `list_sources` provenance: local vs online, last-success health (#7).
+- [ ] Era/advisory notes when results mix classic vs current Live expansion content.
+- [ ] README install recipes for common MCP clients (`npx github:ArtSabintsev/everquest1-mcp`, Claude, Codex, Grok).
 
 ## P4 — packaging & ops
 
 - [ ] Publish to npm under `everquest1-mcp` *or* document GitHub-only install as canonical.
 - [ ] Dockerfile healthcheck + sample compose for long-running stdio/http bridge if used.
-- [ ] Dependabot auto-merge: confirm `fetch-metadata@v3` + non-major actions actually merge (EQ1 historically skipped Wait-for-CI when update-type looked major).
+- [ ] Dependabot auto-merge: confirm non-major updates actually merge after CI.
 
 ## Done recently
 
 - [x] Alphabetize online database table in README.
 - [x] Merge Dependabot setup-node v7 + fetch-metadata v3.
 - [x] Delete stale `website` branch.
-- [x] Baseline `v1.0.0` tag + GitHub Release.
-- [x] Automatic Release workflow live; first automated cut **v1.1.0**.
-- [x] Tracking issues: #5 keepalive, #6 source smoke, #7 provenance/tool grouping.
+- [x] Baseline `v1.0.0` tag + GitHub Release; automation live from **v1.1.0**.
+- [x] Issues #5, #6, #7 implemented.

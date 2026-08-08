@@ -86,6 +86,8 @@ function testToolDefinitions() {
     'search_eqarchives',
     'get_eqarchive_document',
     'list_sources',
+    'eq1_sources',
+    'list_tool_groups',
   ];
 
   for (const toolName of expectedTools) {
@@ -94,6 +96,12 @@ function testToolDefinitions() {
       `Tool ${toolName} should exist`
     );
   }
+
+  // Descriptions carry [group] prefixes for navigation without renaming IDs.
+  const sample = tools.find((t) => t.name === 'search_all');
+  assert(Boolean(sample?.description.startsWith('[multi-source]')), 'search_all should be tagged multi-source');
+  const localSample = tools.find((t) => t.name === 'get_local_data_status');
+  assert(Boolean(localSample?.description.startsWith('[meta]')), 'get_local_data_status should be tagged meta');
 
   console.log(`Tool definitions tests passed! (${tools.length} tools)`);
 }
@@ -116,7 +124,17 @@ async function testListSources() {
   assert(result.includes('Official Sony EQ History'), 'Should list official archived EQ history');
   assert(result.includes('The Firiona Vie Project Lore'), 'Should list FVProject lore');
   assert(result.includes('EQArchives'), 'Should list EQArchives');
-  assert(result.includes('Cache'), 'Should show cache stats');
+  assert(result.includes('Cache') || result.includes('cache'), 'Should show cache stats');
+  assert(result.includes('Authority'), 'Should report authority (local-game vs online)');
+  assert(result.includes('local-game'), 'Should mention local-game authority');
+  assert(result.includes('Tool groups'), 'Should summarize tool groups');
+
+  const alias = await handleToolCall('eq1_sources', {});
+  assert(alias.includes('Allakhazam'), 'eq1_sources alias should match list_sources');
+
+  const groups = await handleToolCall('list_tool_groups', { group: 'meta' });
+  assert(groups.includes('list_sources'), 'list_tool_groups meta should include list_sources');
+  assert(groups.includes('eq1_sources'), 'list_tool_groups meta should include eq1_sources');
 
   console.log('list_sources tests passed!');
 }

@@ -3,3 +3,4 @@ dist/
 *.log
 .DS_Store
 .release-notes.md
+source-smoke-report.json
