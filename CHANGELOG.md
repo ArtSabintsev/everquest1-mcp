@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-08
+
 ### Added
 
 - Keepalive workflow so scheduled jobs survive quiet stretches on `main` (#5).
