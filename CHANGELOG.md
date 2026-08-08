@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-08
+
 ### Added
 
 - Automatic semver Release workflow (`scripts/prepare-release.mjs`, annotated `v*` tags, GitHub Releases) aligned with the EQL / Guild Wars MCP repos.
