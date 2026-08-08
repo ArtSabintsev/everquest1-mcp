@@ -41,15 +41,15 @@ External EQ community databases and historical lore/archive sources searched via
 | [Allakhazam](https://everquest.allakhazam.com) | Primary online database — spells, items, NPCs, zones |
 | [Almar's Guides](https://www.almarsguides.com/eq) | Quest walkthroughs, epic guides, leveling |
 | [EQ Traders](https://www.eqtraders.com) | Tradeskill recipes and guides |
+| [EQArchives](https://search.eqarchives.org/) | Preserved EQ websites, mailing lists, patch records, logs, screenshots, and historical corpus search |
 | [EQInterface](https://www.eqinterface.com) | UI mods, maps, parsers, and tools |
 | [EQResource](https://eqresource.com) | Modern expansion content, progression |
 | [Fanra's Wiki](https://everquest.fanra.info) | General game information, mechanics |
 | [Lucy](https://lucy.allakhazam.com) | Classic EQ spell and item data (historical) |
-| [RaidLoot](https://raidloot.com/EQ) | Raid loot tables by expansion |
-| [Zliz's Compendium](https://www.zlizeq.com) | Comprehensive EQ encyclopedia |
 | [Official Sony EQ History (Wayback)](https://web.archive.org/web/19990910004532/http://everquest.station.sony.com/e_history.html) | Original official 1999 History of Norrath lore page |
+| [RaidLoot](https://raidloot.com/EQ) | Raid loot tables by expansion |
 | [The Firiona Vie Project Lore](https://fvproject.com/index.php/Category:Lore) | Classic EverQuest lore category via MediaWiki API |
-| [EQArchives](https://search.eqarchives.org/) | Preserved EQ websites, mailing lists, patch records, logs, screenshots, and historical corpus search |
+| [Zliz's Compendium](https://www.zlizeq.com) | Comprehensive EQ encyclopedia |
 
 ## Installation
 
