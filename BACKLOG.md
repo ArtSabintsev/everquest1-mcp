@@ -42,3 +42,5 @@ Prioritized follow-ups for **everquest1-mcp**. Not a commitment schedule — pic
 - [x] Merge Dependabot setup-node v7 + fetch-metadata v3.
 - [x] Delete stale `website` branch.
 - [x] Baseline `v1.0.0` tag + GitHub Release.
+- [x] Automatic Release workflow live; first automated cut **v1.1.0**.
+- [x] Tracking issues: #5 keepalive, #6 source smoke, #7 provenance/tool grouping.
