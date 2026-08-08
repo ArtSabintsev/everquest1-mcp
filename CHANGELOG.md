@@ -6,6 +6,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-08
+
+### Changed
+
+- drop leftover cross-package wording from unreleased notes (004f2c2)
+
 ## [1.2.0] - 2026-08-08
 
 ### Added
