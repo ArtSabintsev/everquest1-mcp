@@ -1,3 +1,5 @@
+
+
 # EverQuest MCP
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that provides AI assistants with comprehensive access to EverQuest game data. Search across 12 online databases, lore/archive sources, and a local game data installation with **412 tools** covering spells, items, NPCs, zones, quests, factions, achievements, overseer, mercenaries, lore, archives, and more.
@@ -84,7 +86,7 @@ Without this, only online database tools are available.
 
 ## Configuration
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
 
 ```json
 {
